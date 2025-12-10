@@ -15,7 +15,7 @@ class InventoryApp:
         title.pack(pady=10)
 
         # SEARCH BAR
-        search_frame = tk.Frame(root, bg="#e8ecf1")
+        search_frame = tk.Frame(root, bg="#0073ff")
         search_frame.pack()
 
         tk.Label(search_frame, text="Search:", bg="#e8ecf1").pack(side=tk.LEFT)
