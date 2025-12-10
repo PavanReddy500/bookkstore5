@@ -59,6 +59,7 @@ class InventoryApp:
         # BUTTONS
         tk.Button(form, text="Add Item", command=self.add_item, bg="#4caf50", fg="white").grid(row=4, column=0, pady=10)
         tk.Button(form, text="Delete Selected", command=self.delete_item, bg="#e53935", fg="white").grid(row=4, column=1)
+        tk.Button(form, text="Reset Form", command=self.reset_form, bg="#ff9800", fg="white").grid(row=4, column=2, padx=5)
 
         self.load_items()
 
@@ -77,8 +78,13 @@ class InventoryApp:
 
     def reset_filters(self):
         self.search_entry.delete(0, tk.END)
-        self.type_filter.set("")
         self.load_items()
+
+    def reset_form(self):
+        self.type_box.set("book")
+        self.title_entry.delete(0, tk.END)
+        self.author_entry.delete(0, tk.END)
+        self.year_entry.delete(0, tk.END)
 
     def add_item(self):
         payload = {
