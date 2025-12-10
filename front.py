@@ -18,18 +18,11 @@ class InventoryApp:
         search_frame = tk.Frame(root, bg="#0073ff")
         search_frame.pack()
 
-        tk.Label(search_frame, text="Search:", bg="#e8ecf1").pack(side=tk.LEFT)
+        tk.Label(search_frame, text="Search by Name:", bg="#e8ecf1").pack(side=tk.LEFT)
         self.search_entry = tk.Entry(search_frame)
         self.search_entry.pack(side=tk.LEFT, padx=5)
         
         tk.Button(search_frame, text="Search", command=self.load_items).pack(side=tk.LEFT)
-
-        # FILTER TYPE
-        tk.Label(search_frame, text="   Type:", bg="#e8ecf1").pack(side=tk.LEFT)
-        self.type_filter = ttk.Combobox(search_frame, values=["", "book", "magazine", "film"], width=10)
-        self.type_filter.pack(side=tk.LEFT)
-        self.type_filter.set("")
-
         tk.Button(search_frame, text="Reset", command=self.reset_filters).pack(side=tk.LEFT, padx=5)
 
         # TABLE
@@ -71,8 +64,7 @@ class InventoryApp:
 
     def load_items(self):
         params = {
-            "q": self.search_entry.get(),
-            "type": self.type_filter.get()
+            "q": self.search_entry.get()
         }
         res = requests.get(API, params=params)
         data = res.json()
