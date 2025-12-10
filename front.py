@@ -9,7 +9,7 @@ class InventoryApp:
         self.root = root
         root.title("Reddy Book Inventory")
         root.geometry("850x500")
-        root.configure(bg="#e8ecf1")
+        root.configure(bg="#0073ff")
 
         title = tk.Label(root, text="📚 Reddy Book Inventory", font=("Arial", 22, "bold"), bg="#e8ecf1")
         title.pack(pady=10)
