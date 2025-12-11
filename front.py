@@ -29,7 +29,7 @@ class InventoryApp:
         self.style.map('Add.TButton', background=[('active', '#059669')])
         self.style.configure('Delete.TButton', background='#ef4444', foreground='white', padding=6)
         self.style.map('Delete.TButton', background=[('active', '#dc2626')])
-        self.style.configure('Reset.TButton', background=accent_orange, foreground='white', padding=6)
+        self.style.configure('Reset.TButton', background=self.accent_orange, foreground='white', padding=6)
         self.style.map('Reset.TButton', background=[('active', '#d97706')])
         self.style.configure('TFrame', background=self.bg_color)
         self.style.configure('TLabel', background=self.bg_color, foreground=self.fg_color)
@@ -38,25 +38,30 @@ class InventoryApp:
         self.style.configure('Treeview.Heading', font=('Segoe UI', 11, 'bold'), background='#111827', foreground=self.fg_color)
 
         title_font = tkfont.Font(family='Segoe UI', size=20, weight='bold')
-        title = tk.Label(root, text="📚 Reddy Book Inventory", font=title_font, bg=bg_color, fg=fg_color)
-        title.pack(pady=(14, 6))
+        self.title = tk.Label(self.root, text="📚 Reddy Book Inventory", font=title_font, bg=self.bg_color, fg=self.fg_color)
+        self.title.pack(pady=(14, 6))
 
         # SEARCH BAR
-        search_frame = ttk.Frame(root, padding=(12, 10, 12, 10))
-        search_frame.pack(fill=tk.X, padx=18)
+        self.search_frame = ttk.Frame(self.root, padding=(12, 10, 12, 10))
+        self.search_frame.pack(fill=tk.X, padx=18)
 
-        ttk.Label(search_frame, text="Search by Name:").pack(side=tk.LEFT)
+        ttk.Label(self.search_frame, text="Search by Name:").pack(side=tk.LEFT)
         # use tk.Entry for reliable fg/bg control in dark mode
-        self.search_entry = tk.Entry(search_frame, width=32, bg=input_bg, fg=fg_color, insertbackground=fg_color)
+        self.search_entry = tk.Entry(self.search_frame, width=32, bg=self.input_bg, fg=self.fg_color, insertbackground=self.fg_color)
         self.search_entry.pack(side=tk.LEFT, padx=8)
-        self.search_entry = tk.Entry(search_frame, width=32, bg=self.input_bg, fg=self.fg_color, insertbackground=self.fg_color)
-        ttk.Label(search_frame, text="Type:").pack(side=tk.LEFT, padx=(12, 0))
-        self.type_filter = ttk.Combobox(search_frame, values=["", "book", "magazine", "film"], width=12)
-        self.type_filter.pack(side=tk.LEFT, padx=(6, 8))
-        self.type_filter = ttk.Combobox(self.search_frame, values=["", "book", "magazine", "film"], width=12)
 
-        tk.Button(search_frame, text="Search", command=self.load_items, bg=accent_orange, fg='white', activebackground='#d97706', relief='flat').pack(side=tk.LEFT)
-        tk.Button(search_frame, text="Reset", command=self.reset_filters, bg='#6b7280', fg='white', activebackground='#4b5563', relief='flat').pack(side=tk.LEFT, padx=8)
+        ttk.Label(self.search_frame, text="Type:").pack(side=tk.LEFT, padx=(12, 0))
+        self.type_filter = ttk.Combobox(self.search_frame, values=["", "book", "magazine", "film"], width=12)
+        self.type_filter.pack(side=tk.LEFT, padx=(6, 8))
+        self.type_filter.set("")
+
+        self.search_btn = tk.Button(self.search_frame, text="Search", command=self.load_items, bg=self.accent_orange, fg='white', activebackground='#d97706', relief='flat')
+        self.search_btn.pack(side=tk.LEFT)
+        self.reset_search_btn = tk.Button(self.search_frame, text="Reset", command=self.reset_filters, bg='#6b7280', fg='white', activebackground='#4b5563', relief='flat')
+        self.reset_search_btn.pack(side=tk.LEFT, padx=8)
+        # Theme toggle button
+        self.theme_btn = tk.Button(self.search_frame, text="Light Mode", command=self.toggle_theme, bg=self.bg_color, fg=self.fg_color, relief='flat')
+        self.theme_btn.pack(side=tk.RIGHT)
 
         # placeholder behavior for search entry
         self._placeholder_text = 'Enter title or author...'
@@ -68,7 +73,7 @@ class InventoryApp:
         def _clear_placeholder(event=None):
             if self.search_entry.get() == self._placeholder_text:
                 self.search_entry.delete(0, tk.END)
-                self.search_entry.config(fg=fg_color)
+                self.search_entry.config(fg=self.fg_color)
 
         self.search_entry.bind('<FocusIn>', _clear_placeholder)
         self.search_entry.bind('<FocusOut>', lambda e: _add_placeholder())
@@ -76,10 +81,10 @@ class InventoryApp:
 
         # TABLE
         columns = ("id", "type", "title", "author", "year")
-        tree_frame = ttk.Frame(root)
-        tree_frame.pack(fill=tk.BOTH, expand=True, padx=18, pady=(8, 6))
+        self.tree_frame = ttk.Frame(self.root)
+        self.tree_frame.pack(fill=tk.BOTH, expand=True, padx=18, pady=(8, 6))
 
-        self.tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
+        self.tree = ttk.Treeview(self.tree_frame, columns=columns, show="headings")
         for col in columns:
             self.tree.heading(col, text=col.capitalize())
         self.tree.column("id", width=60, anchor='center')
@@ -87,11 +92,6 @@ class InventoryApp:
         self.tree.column("title", width=320)
         self.tree.column("author", width=220)
         self.tree.column("year", width=80, anchor='center')
-
-        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscroll=vsb.set)
-        vsb.pack(side=tk.RIGHT, fill=tk.Y)
-        self.tree.pack(fill=tk.BOTH, expand=True)
 
         self.vsb = ttk.Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscroll=self.vsb.set)
@@ -102,28 +102,33 @@ class InventoryApp:
         self.tree.tag_configure('odd', background='#0b1220', foreground=self.fg_color)
         self.tree.tag_configure('even', background='#0f1724', foreground=self.fg_color)
 
-        ttk.Label(form, text="Type:").grid(row=0, column=0, sticky='w', padx=(0,8), pady=4)
-        self.type_box = ttk.Combobox(form, values=["book", "magazine", "film"], width=18)
+        self.form = ttk.Frame(self.root, padding=(12, 10, 12, 12))
+        self.form.pack(fill=tk.X, padx=18, pady=(4, 12))
+
+        ttk.Label(self.form, text="Type:").grid(row=0, column=0, sticky='w', padx=(0,8), pady=4)
+        self.type_box = ttk.Combobox(self.form, values=["book", "magazine", "film"], width=18)
         self.type_box.grid(row=0, column=1, sticky='w')
         self.type_box.set("book")
 
-        ttk.Label(form, text="Title:").grid(row=1, column=0, sticky='w', padx=(0,8), pady=4)
-        self.title_entry = ttk.Entry(form, width=40)
+        ttk.Label(self.form, text="Title:").grid(row=1, column=0, sticky='w', padx=(0,8), pady=4)
+        self.title_entry = ttk.Entry(self.form, width=40)
         self.title_entry.grid(row=1, column=1, sticky='w')
 
-        ttk.Label(form, text="Author/Director:").grid(row=2, column=0, sticky='w', padx=(0,8), pady=4)
-        self.author_entry = ttk.Entry(form, width=40)
+        ttk.Label(self.form, text="Author/Director:").grid(row=2, column=0, sticky='w', padx=(0,8), pady=4)
+        self.author_entry = ttk.Entry(self.form, width=40)
         self.author_entry.grid(row=2, column=1, sticky='w')
 
-        ttk.Label(form, text="Year:").grid(row=3, column=0, sticky='w', padx=(0,8), pady=4)
-        self.year_entry = ttk.Entry(form, width=18)
+        ttk.Label(self.form, text="Year:").grid(row=3, column=0, sticky='w', padx=(0,8), pady=4)
+        self.year_entry = ttk.Entry(self.form, width=18)
         self.year_entry.grid(row=3, column=1, sticky='w')
 
-        # Buttons (ttk for modern look)
         # Buttons using tk for reliable background/foreground colors
-        tk.Button(form, text="Add Item", command=self.add_item, bg='#10b981', fg='white', activebackground='#059669', relief='flat').grid(row=4, column=0, pady=12)
-        tk.Button(form, text="Delete Selected", command=self.delete_item, bg='#ef4444', fg='white', activebackground='#dc2626', relief='flat').grid(row=4, column=1, sticky='w', padx=(8,0))
-        tk.Button(form, text="Reset Form", command=self.reset_form, bg=accent_orange, fg='white', activebackground='#d97706', relief='flat').grid(row=4, column=2, sticky='w', padx=8)
+        self.add_btn = tk.Button(self.form, text="Add Item", command=self.add_item, bg='#10b981', fg='white', activebackground='#059669', relief='flat')
+        self.add_btn.grid(row=4, column=0, pady=12)
+        self.delete_btn = tk.Button(self.form, text="Delete Selected", command=self.delete_item, bg='#ef4444', fg='white', activebackground='#dc2626', relief='flat')
+        self.delete_btn.grid(row=4, column=1, sticky='w', padx=(8,0))
+        self.reset_form_btn = tk.Button(self.form, text="Reset Form", command=self.reset_form, bg=self.accent_orange, fg='white', activebackground='#d97706', relief='flat')
+        self.reset_form_btn.grid(row=4, column=2, sticky='w', padx=8)
 
         self.load_items()
 
