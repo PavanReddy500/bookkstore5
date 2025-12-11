@@ -12,7 +12,7 @@ class InventoryApp:
         root.geometry("950x600")
         # Theme defaults (start dark)
         self.is_dark = True
-        self.bg_color = '#222222'  # dark gray (updated per request)
+        self.bg_color = '#111111'  # dark gray (updated per request)
         self.fg_color = '#f8fafc'  # light text
         self.input_bg = '#374151'  # input background
         self.accent_orange = '#f59e0b'
@@ -35,7 +35,7 @@ class InventoryApp:
         self.style.configure('TLabel', background=self.bg_color, foreground=self.fg_color)
         self.style.configure('TEntry', fieldbackground=self.input_bg, foreground=self.fg_color, padding=4)
         # Larger tree rows and font for better readability
-        self.style.configure('Treeview', rowheight=36, font=('Segoe UI', 11), background='#0b1220', fieldbackground='#0b1220', foreground=self.fg_color)
+        self.style.configure('Treeview', rowheight=36, font=('Segoe UI', 11), background='#222222', fieldbackground='#222222', foreground=self.fg_color)
         self.style.configure('Treeview.Heading', font=('Segoe UI', 12, 'bold'), background='#111827', foreground=self.fg_color)
 
         title_font = tkfont.Font(family='Segoe UI', size=20, weight='bold')
@@ -177,7 +177,7 @@ class InventoryApp:
     def apply_theme(self):
         """Apply current theme colors to widgets."""
         if self.is_dark:
-            self.bg_color = '#222222'
+            self.bg_color = '#111111'
             self.fg_color = '#f8fafc'
             self.input_bg = '#374151'
             search_bg = '#f59e0b'
@@ -185,7 +185,7 @@ class InventoryApp:
             add_bg = '#10b981'
             del_bg = '#ef4444'
             reset_bg = '#f59e0b'
-            tree_bg = '#0b1220'
+            tree_bg = '#222222'
             tree_head = '#111827'
         else:
             self.bg_color = '#f3f6fb'
@@ -228,8 +228,8 @@ class InventoryApp:
 
         # tree rows
         if self.is_dark:
-            self.tree.tag_configure('odd', background='#0b1220', foreground=self.fg_color)
-            self.tree.tag_configure('even', background='#0f1724', foreground=self.fg_color)
+            self.tree.tag_configure('odd', background='#222222', foreground=self.fg_color)
+            self.tree.tag_configure('even', background='#1a1a1a', foreground=self.fg_color)
         else:
             self.tree.tag_configure('odd', background='#ffffff', foreground=self.fg_color)
             self.tree.tag_configure('even', background='#f8fafc', foreground=self.fg_color)
