@@ -19,6 +19,12 @@ class InventoryApp:
         except Exception:
             pass
         self.style.configure('Accent.TButton', background='#2563eb', foreground='white', padding=6)
+        self.style.configure('Add.TButton', background='#10b981', foreground='white', padding=6)
+        self.style.map('Add.TButton', background=[('active', '#059669')])
+        self.style.configure('Delete.TButton', background='#ef4444', foreground='white', padding=6)
+        self.style.map('Delete.TButton', background=[('active', '#dc2626')])
+        self.style.configure('Reset.TButton', background='#f59e0b', foreground='white', padding=6)
+        self.style.map('Reset.TButton', background=[('active', '#d97706')])
         self.style.configure('TFrame', background='#f3f6fb')
         self.style.configure('TLabel', background='#f3f6fb', foreground='#0f172a')
         self.style.configure('TEntry', padding=4)
@@ -106,9 +112,9 @@ class InventoryApp:
         self.year_entry.grid(row=3, column=1, sticky='w')
 
         # Buttons (ttk for modern look)
-        ttk.Button(form, text="Add Item", command=self.add_item, style='Accent.TButton').grid(row=4, column=0, pady=12)
-        ttk.Button(form, text="Delete Selected", command=self.delete_item).grid(row=4, column=1, sticky='w')
-        ttk.Button(form, text="Reset Form", command=self.reset_form).grid(row=4, column=2, sticky='w', padx=8)
+        ttk.Button(form, text="Add Item", command=self.add_item, style='Add.TButton').grid(row=4, column=0, pady=12)
+        ttk.Button(form, text="Delete Selected", command=self.delete_item, style='Delete.TButton').grid(row=4, column=1, sticky='w', padx=(8,0))
+        ttk.Button(form, text="Reset Form", command=self.reset_form, style='Reset.TButton').grid(row=4, column=2, sticky='w', padx=8)
 
         self.load_items()
 
