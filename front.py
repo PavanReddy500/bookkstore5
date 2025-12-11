@@ -12,7 +12,7 @@ class InventoryApp:
         root.geometry("950x600")
         # Theme defaults (start dark)
         self.is_dark = True
-        self.bg_color = '#111111'  # dark gray (updated per request)
+        self.bg_color = '#222222'  # dark gray (updated per request)
         self.fg_color = '#f8fafc'  # light text
         self.input_bg = '#374151'  # input background
         self.accent_orange = '#f59e0b'
@@ -177,7 +177,7 @@ class InventoryApp:
     def apply_theme(self):
         """Apply current theme colors to widgets."""
         if self.is_dark:
-            self.bg_color = '#111111'
+            self.bg_color = '#222222'
             self.fg_color = '#f8fafc'
             self.input_bg = '#374151'
             search_bg = '#f59e0b'
@@ -220,7 +220,12 @@ class InventoryApp:
         # buttons
         self.search_btn.config(bg=search_bg, fg='white')
         self.reset_search_btn.config(bg=reset_search_bg, fg='white')
-        self.theme_btn.config(bg=self.bg_color, fg=self.fg_color)
+        # keep theme toggle button orange so it remains visible in both modes
+        try:
+            self.theme_btn.config(bg=self.accent_orange, fg='white', activebackground='#d97706')
+        except Exception:
+            # fallback if widget not yet available
+            pass
 
         self.add_btn.config(bg=add_bg, fg='white')
         self.delete_btn.config(bg=del_bg, fg='white')
