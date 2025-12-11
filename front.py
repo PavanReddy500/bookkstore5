@@ -10,7 +10,13 @@ class InventoryApp:
         self.root = root
         root.title("Reddy Book Inventory")
         root.geometry("950x600")
-        root.configure(bg="#f3f6fb")
+        # Theme defaults (start dark)
+        self.is_dark = True
+        self.bg_color = '#1f2937'  # dark gray
+        self.fg_color = '#f8fafc'  # light text
+        self.input_bg = '#374151'  # input background
+        self.accent_orange = '#f59e0b'
+        root.configure(bg=self.bg_color)
 
         # Styles
         self.style = ttk.Style()
@@ -18,21 +24,21 @@ class InventoryApp:
             self.style.theme_use('clam')
         except Exception:
             pass
-        self.style.configure('Accent.TButton', background='#2563eb', foreground='white', padding=6)
+        self.style.configure('Accent.TButton', background=self.accent_orange, foreground='white', padding=6)
         self.style.configure('Add.TButton', background='#10b981', foreground='white', padding=6)
         self.style.map('Add.TButton', background=[('active', '#059669')])
         self.style.configure('Delete.TButton', background='#ef4444', foreground='white', padding=6)
         self.style.map('Delete.TButton', background=[('active', '#dc2626')])
-        self.style.configure('Reset.TButton', background='#f59e0b', foreground='white', padding=6)
+        self.style.configure('Reset.TButton', background=accent_orange, foreground='white', padding=6)
         self.style.map('Reset.TButton', background=[('active', '#d97706')])
-        self.style.configure('TFrame', background='#f3f6fb')
-        self.style.configure('TLabel', background='#f3f6fb', foreground='#0f172a')
-        self.style.configure('TEntry', padding=4)
-        self.style.configure('Treeview', rowheight=28, font=('Segoe UI', 10))
-        self.style.configure('Treeview.Heading', font=('Segoe UI', 11, 'bold'))
+        self.style.configure('TFrame', background=self.bg_color)
+        self.style.configure('TLabel', background=self.bg_color, foreground=self.fg_color)
+        self.style.configure('TEntry', fieldbackground=self.input_bg, foreground=self.fg_color, padding=4)
+        self.style.configure('Treeview', rowheight=28, font=('Segoe UI', 10), background='#0b1220', fieldbackground='#0b1220', foreground=self.fg_color)
+        self.style.configure('Treeview.Heading', font=('Segoe UI', 11, 'bold'), background='#111827', foreground=self.fg_color)
 
         title_font = tkfont.Font(family='Segoe UI', size=20, weight='bold')
-        title = tk.Label(root, text="📚 Reddy Book Inventory", font=title_font, bg="#f3f6fb", fg="#0f172a")
+        title = tk.Label(root, text="📚 Reddy Book Inventory", font=title_font, bg=bg_color, fg=fg_color)
         title.pack(pady=(14, 6))
 
         # SEARCH BAR
@@ -40,28 +46,29 @@ class InventoryApp:
         search_frame.pack(fill=tk.X, padx=18)
 
         ttk.Label(search_frame, text="Search by Name:").pack(side=tk.LEFT)
-        self.search_entry = ttk.Entry(search_frame, width=32)
+        # use tk.Entry for reliable fg/bg control in dark mode
+        self.search_entry = tk.Entry(search_frame, width=32, bg=input_bg, fg=fg_color, insertbackground=fg_color)
         self.search_entry.pack(side=tk.LEFT, padx=8)
-
+        self.search_entry = tk.Entry(search_frame, width=32, bg=self.input_bg, fg=self.fg_color, insertbackground=self.fg_color)
         ttk.Label(search_frame, text="Type:").pack(side=tk.LEFT, padx=(12, 0))
         self.type_filter = ttk.Combobox(search_frame, values=["", "book", "magazine", "film"], width=12)
         self.type_filter.pack(side=tk.LEFT, padx=(6, 8))
-        self.type_filter.set("")
+        self.type_filter = ttk.Combobox(self.search_frame, values=["", "book", "magazine", "film"], width=12)
 
-        ttk.Button(search_frame, text="Search", command=self.load_items, style='Accent.TButton').pack(side=tk.LEFT)
-        ttk.Button(search_frame, text="Reset", command=self.reset_filters).pack(side=tk.LEFT, padx=8)
+        tk.Button(search_frame, text="Search", command=self.load_items, bg=accent_orange, fg='white', activebackground='#d97706', relief='flat').pack(side=tk.LEFT)
+        tk.Button(search_frame, text="Reset", command=self.reset_filters, bg='#6b7280', fg='white', activebackground='#4b5563', relief='flat').pack(side=tk.LEFT, padx=8)
 
         # placeholder behavior for search entry
         self._placeholder_text = 'Enter title or author...'
         def _add_placeholder():
             if not self.search_entry.get():
                 self.search_entry.insert(0, self._placeholder_text)
-                self.search_entry.configure(foreground='#94a3b8')
+                self.search_entry.config(fg='#94a3b8')
 
         def _clear_placeholder(event=None):
             if self.search_entry.get() == self._placeholder_text:
                 self.search_entry.delete(0, tk.END)
-                self.search_entry.configure(foreground='#0f172a')
+                self.search_entry.config(fg=fg_color)
 
         self.search_entry.bind('<FocusIn>', _clear_placeholder)
         self.search_entry.bind('<FocusOut>', lambda e: _add_placeholder())
@@ -86,13 +93,14 @@ class InventoryApp:
         vsb.pack(side=tk.RIGHT, fill=tk.Y)
         self.tree.pack(fill=tk.BOTH, expand=True)
 
-        # alternating row colors
-        self.tree.tag_configure('odd', background='#ffffff')
-        self.tree.tag_configure('even', background='#f8fafc')
+        self.vsb = ttk.Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscroll=self.vsb.set)
+        self.vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tree.pack(fill=tk.BOTH, expand=True)
 
         # FORM FRAME
-        form = ttk.Frame(root, padding=(12, 10, 12, 12))
-        form.pack(fill=tk.X, padx=18, pady=(4, 12))
+        self.tree.tag_configure('odd', background='#0b1220', foreground=self.fg_color)
+        self.tree.tag_configure('even', background='#0f1724', foreground=self.fg_color)
 
         ttk.Label(form, text="Type:").grid(row=0, column=0, sticky='w', padx=(0,8), pady=4)
         self.type_box = ttk.Combobox(form, values=["book", "magazine", "film"], width=18)
@@ -112,9 +120,10 @@ class InventoryApp:
         self.year_entry.grid(row=3, column=1, sticky='w')
 
         # Buttons (ttk for modern look)
-        ttk.Button(form, text="Add Item", command=self.add_item, style='Add.TButton').grid(row=4, column=0, pady=12)
-        ttk.Button(form, text="Delete Selected", command=self.delete_item, style='Delete.TButton').grid(row=4, column=1, sticky='w', padx=(8,0))
-        ttk.Button(form, text="Reset Form", command=self.reset_form, style='Reset.TButton').grid(row=4, column=2, sticky='w', padx=8)
+        # Buttons using tk for reliable background/foreground colors
+        tk.Button(form, text="Add Item", command=self.add_item, bg='#10b981', fg='white', activebackground='#059669', relief='flat').grid(row=4, column=0, pady=12)
+        tk.Button(form, text="Delete Selected", command=self.delete_item, bg='#ef4444', fg='white', activebackground='#dc2626', relief='flat').grid(row=4, column=1, sticky='w', padx=(8,0))
+        tk.Button(form, text="Reset Form", command=self.reset_form, bg=accent_orange, fg='white', activebackground='#d97706', relief='flat').grid(row=4, column=2, sticky='w', padx=8)
 
         self.load_items()
 
@@ -147,6 +156,73 @@ class InventoryApp:
         self.title_entry.delete(0, tk.END)
         self.author_entry.delete(0, tk.END)
         self.year_entry.delete(0, tk.END)
+
+    def toggle_theme(self):
+        """Toggle between dark and light themes and apply."""
+        self.is_dark = not getattr(self, 'is_dark', True)
+        # update theme button text
+        self.theme_btn.config(text="Light Mode" if self.is_dark else "Dark Mode")
+        self.apply_theme()
+
+    def apply_theme(self):
+        """Apply current theme colors to widgets."""
+        if self.is_dark:
+            self.bg_color = '#1f2937'
+            self.fg_color = '#f8fafc'
+            self.input_bg = '#374151'
+            search_bg = '#f59e0b'
+            reset_search_bg = '#6b7280'
+            add_bg = '#10b981'
+            del_bg = '#ef4444'
+            reset_bg = '#f59e0b'
+            tree_bg = '#0b1220'
+            tree_head = '#111827'
+        else:
+            self.bg_color = '#f3f6fb'
+            self.fg_color = '#0f172a'
+            self.input_bg = '#ffffff'
+            search_bg = '#2563eb'
+            reset_search_bg = '#6b7280'
+            add_bg = '#16a34a'
+            del_bg = '#dc2626'
+            reset_bg = '#f59e0b'
+            tree_bg = '#ffffff'
+            tree_head = '#f3f4f6'
+
+        # root and title
+        self.root.configure(bg=self.bg_color)
+        self.title.config(bg=self.bg_color, fg=self.fg_color)
+
+        # ttk styles
+        self.style.configure('TFrame', background=self.bg_color)
+        self.style.configure('TLabel', background=self.bg_color, foreground=self.fg_color)
+        self.style.configure('TEntry', fieldbackground=self.input_bg, foreground=self.fg_color)
+        self.style.configure('Treeview', background=tree_bg, fieldbackground=tree_bg, foreground=self.fg_color)
+        self.style.configure('Treeview.Heading', background=tree_head, foreground=self.fg_color)
+
+        # entries and combobox
+        self.search_entry.config(bg=self.input_bg, fg=self.fg_color, insertbackground=self.fg_color)
+        try:
+            self.style.configure('TCombobox', fieldbackground=self.input_bg, foreground=self.fg_color)
+        except Exception:
+            pass
+
+        # buttons
+        self.search_btn.config(bg=search_bg, fg='white')
+        self.reset_search_btn.config(bg=reset_search_bg, fg='white')
+        self.theme_btn.config(bg=self.bg_color, fg=self.fg_color)
+
+        self.add_btn.config(bg=add_bg, fg='white')
+        self.delete_btn.config(bg=del_bg, fg='white')
+        self.reset_form_btn.config(bg=reset_bg, fg='white')
+
+        # tree rows
+        if self.is_dark:
+            self.tree.tag_configure('odd', background='#0b1220', foreground=self.fg_color)
+            self.tree.tag_configure('even', background='#0f1724', foreground=self.fg_color)
+        else:
+            self.tree.tag_configure('odd', background='#ffffff', foreground=self.fg_color)
+            self.tree.tag_configure('even', background='#f8fafc', foreground=self.fg_color)
 
     def add_item(self):
         payload = {
