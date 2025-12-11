@@ -12,7 +12,7 @@ class InventoryApp:
         root.geometry("950x600")
         # Theme defaults (start dark)
         self.is_dark = True
-        self.bg_color = '#1f2937'  # dark gray
+        self.bg_color = '#222222'  # dark gray (updated per request)
         self.fg_color = '#f8fafc'  # light text
         self.input_bg = '#374151'  # input background
         self.accent_orange = '#f59e0b'
@@ -177,7 +177,7 @@ class InventoryApp:
     def apply_theme(self):
         """Apply current theme colors to widgets."""
         if self.is_dark:
-            self.bg_color = '#1f2937'
+            self.bg_color = '#222222'
             self.fg_color = '#f8fafc'
             self.input_bg = '#374151'
             search_bg = '#f59e0b'
