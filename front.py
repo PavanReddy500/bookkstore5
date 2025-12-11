@@ -21,7 +21,12 @@ class InventoryApp:
         tk.Label(search_frame, text="Search by Name:", bg="#e8ecf1").pack(side=tk.LEFT)
         self.search_entry = tk.Entry(search_frame)
         self.search_entry.pack(side=tk.LEFT, padx=5)
-        
+
+        tk.Label(search_frame, text="   Type:", bg="#e8ecf1").pack(side=tk.LEFT)
+        self.type_filter = ttk.Combobox(search_frame, values=["", "book", "magazine", "film"], width=10)
+        self.type_filter.pack(side=tk.LEFT)
+        self.type_filter.set("")
+
         tk.Button(search_frame, text="Search", command=self.load_items).pack(side=tk.LEFT)
         tk.Button(search_frame, text="Reset", command=self.reset_filters).pack(side=tk.LEFT, padx=5)
 
@@ -64,9 +69,14 @@ class InventoryApp:
         self.load_items()
 
     def load_items(self):
-        params = {
-            "q": self.search_entry.get()
-        }
+        params = {}
+        q = self.search_entry.get().strip()
+        if q:
+            params["q"] = q
+        # Include type only when user has selected one (optional)
+        if hasattr(self, "type_filter") and self.type_filter.get().strip():
+            params["type"] = self.type_filter.get().strip()
+
         res = requests.get(API, params=params)
         data = res.json()
 
@@ -78,6 +88,8 @@ class InventoryApp:
 
     def reset_filters(self):
         self.search_entry.delete(0, tk.END)
+        if hasattr(self, "type_filter"):
+            self.type_filter.set("")
         self.load_items()
 
     def reset_form(self):
