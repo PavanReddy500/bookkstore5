@@ -514,73 +514,112 @@ if __name__ == '__main__':
 
             <div id="backend-code" class="code-container">
                 <pre>
-(from flask import Flask, request, jsonify, abort
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-# This line requires a separate file named 'models.py'
-from models import db, Item 
+# Ensure this line correctly imports the Item class from the new models.py
+from models import Item 
 import os
+import json
+import operator 
 
-
+# --- FILE PERSISTENCE CONFIGURATION (MANDATORY CHANGE) ---
 BASE_DIR = os.path.dirname(__file__)
-DB_PATH = os.path.join(BASE_DIR, 'items.db')
-
+DATA_FILE_PATH = os.path.join(BASE_DIR, 'library_data.json')
+# --- END PERSISTENCE CONFIGURATION ---
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + DB_PATH
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 CORS(app)
 
+media_items = []
+next_item_id = 1
 
-db.init_app(app)
 
+def load_data():
+    """Loads media data from the JSON file into memory at startup."""
+    global media_items, next_item_id
+    media_items = []
+    
+    # Check 1: If the file does not exist, create it with samples
+    if not os.path.exists(DATA_FILE_PATH):
+        print(f"Creating initial data file: {DATA_FILE_PATH}")
+        # FIX: Ensure all sample creation uses 'id=' and not 'item_id='
+        samples = [
+            Item(id=1, type='book', title='The Pragmatic Engineer', author='John Doe', year=2020),
+            Item(id=2, type='magazine', title='Science Monthly', author='Editorial Team', year=2024),
+            Item(id=3, type='film', title='Space Adventure', author='Jane Director', year=2019),
+            Item(id=4, type='book', title='A Brief History of Time', author='Stephen Hawking', year=1988),
+            Item(id=5, type='book', title='Zen and the Art of Motorcycle Maintenance', author='Robert Pirsig', year=1974),
+        ]
+        media_items = samples
+        save_data()
+        next_item_id = len(media_items) + 1
+        return
 
-@app.before_request
-def create_tables():
-    """Initializes the database and adds sample data if empty."""
-    with app.app_context():
-        if not hasattr(app, 'initialized'):
-            db.create_all()
-            app.initialized = True
+    try:
+        # Check 2: Load data from the existing file
+        with open(DATA_FILE_PATH, 'r') as f:
+            data = json.load(f)
             
-            # add some sample data if empty
-            if Item.query.count() == 0:
-                samples = [
-                    Item(type='book', title='The Pragmatic Engineer', author='John Doe', year=2020),
-                    Item(type='magazine', title='Science Monthly', author='Editorial Team', year=2024),
-                    Item(type='film', title='Space Adventure', author='Jane Director', year=2019),
-                    Item(type='book', title='A Brief History of Time', author='Stephen Hawking', year=1988),
-                    Item(type='book', title='Zen and the Art of Motorcycle Maintenance', author='Robert Pirsig', year=1974),
-                ]
-                db.session.bulk_save_objects(samples)
-                db.session.commit()
+        for item_data in data:
+            media_items.append(Item(
+                id=item_data.get('id'), # FIX: Ensure constructor call uses 'id'
+                type=item_data.get('type'), 
+                title=item_data.get('title'), 
+                author=item_data.get('author'), 
+                year=item_data.get('year')
+            ))
+            
+        if media_items:
+            next_item_id = max(item.id for item in media_items) + 1
+        else:
+            next_item_id = 1
+            
+    except Exception as e:
+        print(f"Error loading JSON data: {e}. Starting with empty data.")
+        media_items = []
+        next_item_id = 1
+        
 
+def save_data():
+    """Writes the current data list back to the JSON file for persistence."""
+    try:
+        data_to_save = [item.as_dict() for item in media_items]
+        with open(DATA_FILE_PATH, 'w') as f:
+            json.dump(data_to_save, f, indent=4) 
+    except Exception as e:
+        print(f"CRITICAL ERROR: Failed to save JSON data: {e}") 
+
+
+# --------------------------------------------------------------------------------
+# API ROUTES 
+# --------------------------------------------------------------------------------
 
 @app.route('/items', methods=['GET'])
 def list_items():
-    """Handles searching, filtering, and listing all items."""
-    q = request.args.get('q', '').strip()
+    q = request.args.get('q', '').strip().lower()
     t = request.args.get('type', '').strip().lower()
-    query = Item.query
     
-    # Filter by type
+    filtered_items = media_items
+    
     if t in ('book', 'magazine', 'film'):
-        query = query.filter_by(type=t)
+        filtered_items = [item for item in filtered_items if item.type == t]
         
-    # Filter by search query (title or author)
     if q:
-        like = f"%{q}%"
-        query = query.filter((Item.title.ilike(like)) | (Item.author.ilike(like)))
+        filtered_items = [
+            item for item in filtered_items 
+            if q in item.title.lower() or q in item.author.lower()
+        ]
     
-    # --- UPDATED: Sort alphabetically by title (A-Z) ---
-    items = [i.as_dict() for i in query.order_by(Item.title.asc()).all()]
-    # ----------------------------------------------------
+    filtered_items.sort(key=operator.attrgetter('title'))
     
-    return jsonify(items)
+    items_as_dict = [i.as_dict() for i in filtered_items]
+    
+    return jsonify(items_as_dict)
 
 
 @app.route('/items', methods=['POST'])
 def create_item():
-    """Adds a new item to the inventory."""
+    global next_item_id
     data = request.get_json() or {}
     type_ = data.get('type')
     title = data.get('title')
@@ -592,26 +631,40 @@ def create_item():
     if type_.lower() not in ('book', 'magazine', 'film'):
         return jsonify({'error': 'invalid type'}), 400
         
-    item = Item(type=type_.lower(), title=title.strip(), author=(author or '').strip(), year=year)
-    db.session.add(item)
-    db.session.commit()
-    return jsonify(item.as_dict()), 201
+    new_item = Item(
+        id=next_item_id, # FIX: Ensure constructor call uses 'id'
+        type=type_.lower(), 
+        title=title.strip(), 
+        author=(author or '').strip(), 
+        year=year
+    )
+    
+    media_items.append(new_item)
+    next_item_id += 1 
+    
+    save_data() 
+    
+    return jsonify(new_item.as_dict()), 201
 
 
 @app.route('/items/<int:item_id>', methods=['DELETE'])
 def delete_item(item_id):
-    """Deletes an item by ID."""
-    item = Item.query.get(item_id)
-    if not item:
+    global media_items
+    
+    initial_count = len(media_items)
+    media_items = [item for item in media_items if item.id != item_id]
+    
+    if len(media_items) == initial_count:
         return jsonify({'error': 'not found'}), 404
-    db.session.delete(item)
-    db.session.commit()
+        
+    save_data() 
+    
     return jsonify({'ok': True})
 
 
 if __name__ == '__main__':
-    with app.app_context():
-        app.run(debug=True, port=5000))
+    load_data() 
+    app.run(debug=True, port=5000)
                 </pre>
             </div>
         </section>

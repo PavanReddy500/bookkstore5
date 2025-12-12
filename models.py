@@ -1,23 +1,23 @@
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Integer, String
+# models.py - FINAL version for JSON persistence (NO SQLALCHEMY)
 
-# Initialize SQLAlchemy
-db = SQLAlchemy()
-
-# Define the Item class (your database table)
-class Item(db.Model):
-    id = Column(Integer, primary_key=True)
-    type = Column(String(80), nullable=False)
-    title = Column(String(120), nullable=False)
-    author = Column(String(120), nullable=True)
-    year = Column(Integer, nullable=True)
-
+class Item:
+    """
+    Defines the structure for a media item. 
+    Uses 'id' in the constructor, which fixes the TypeError.
+    """
+    def __init__(self, id, type, title, author, year):
+        self.id = id
+        self.type = type
+        self.title = title
+        self.author = author
+        self.year = year
+        
     def as_dict(self):
-        # Helper to convert object to a dictionary for JSON output
+        """Returns the item's data as a dictionary, compatible with JSON output."""
         return {
-            'id': self.id,
-            'type': self.type,
-            'title': self.title,
-            'author': self.author,
-            'year': self.year
+            "id": self.id,
+            "type": self.type,
+            "title": self.title,
+            "author": self.author,
+            "year": self.year
         }
