@@ -3,93 +3,60 @@ from tkinter import ttk, messagebox
 import tkinter.font as tkfont
 import requests
 
+# The API address MUST match your running Flask server
 API = "http://127.0.0.1:5000/items"
 
 class InventoryApp:
     def __init__(self, root):
         self.root = root
         root.title("Reddy Book Inventory")
-        root.geometry("950x600")
-        # Theme defaults (start dark)
-        self.is_dark = True
-        self.bg_color = '#222222'  # dark gray (updated per request)
-        self.fg_color = '#f8fafc'  # light text
-        self.input_bg = '#374151'  # input background
-        self.accent_orange = '#f59e0b'
-        root.configure(bg=self.bg_color)
+        root.geometry("1000x750") 
+        
+        # --- Theme State ---
+        self.is_dark = False # Set LIGHT mode as DEFAULT
+        
+        # --- Color Definitions (Used in both themes) ---
+        self.ACCENT_SEARCH = '#e69138' # Orange
+        self.ACCENT_RESET_FORM = '#e69138' # **NEW: Reset form is now Orange**
+        self.ACCENT_TOGGLE = '#c864a0' # Pink/Purple (used for theme toggle button)
+        self.ACCENT_GREEN = '#10b981'
+        self.ACCENT_RED = '#ef4444'
 
-        # Styles
+        # --- Base Configuration ---
         self.style = ttk.Style()
         try:
-            self.style.theme_use('clam')
+            self.style.theme_use('clam') 
         except Exception:
             pass
-        self.style.configure('Accent.TButton', background=self.accent_orange, foreground='white', padding=8)
-        self.style.configure('Add.TButton', background='#10b981', foreground='white', padding=6)
-        self.style.map('Add.TButton', background=[('active', '#059669')])
-        self.style.configure('Delete.TButton', background='#ef4444', foreground='white', padding=6)
-        self.style.map('Delete.TButton', background=[('active', '#dc2626')])
-        self.style.configure('Reset.TButton', background=self.accent_orange, foreground='white', padding=6)
-        self.style.map('Reset.TButton', background=[('active', '#d97706')])
-        self.style.configure('TFrame', background=self.bg_color)
-        self.style.configure('TLabel', background=self.bg_color, foreground=self.fg_color)
-        self.style.configure('TEntry', fieldbackground=self.input_bg, foreground=self.fg_color, padding=4)
-        # Larger tree rows and font for better readability
-        self.style.configure('Treeview', rowheight=36, font=('Segoe UI', 11), background='#222222', fieldbackground='#222222', foreground=self.fg_color)
-        self.style.configure('Treeview.Heading', font=('Segoe UI', 12, 'bold'), background='#111827', foreground=self.fg_color)
 
-        title_font = tkfont.Font(family='Segoe UI', size=20, weight='bold')
-        # larger fonts for inputs and buttons
+        self.title_font = tkfont.Font(family='Segoe UI', size=24, weight='bold')
         self.big_font = tkfont.Font(family='Segoe UI', size=11)
         self.btn_font = tkfont.Font(family='Segoe UI', size=10, weight='bold')
-        self.title = tk.Label(self.root, text="📚 Reddy Book Inventory", font=title_font, bg=self.bg_color, fg=self.fg_color)
-        self.title.pack(pady=(14, 6))
 
-        # SEARCH BAR
-        # slightly larger search area
+        # --- Layout Components ---
+
+        # Main Title 
+        self.title = tk.Label(self.root, text="📚 Reddy Book Inventory", font=self.title_font)
+        self.title.pack(pady=(20, 10))
+
+        # 1. SEARCH BAR
         self.search_frame = ttk.Frame(self.root, padding=(18, 14, 18, 14))
-        self.search_frame.pack(fill=tk.X, padx=18)
+        self.search_frame.pack(fill=tk.X, padx=20)
+        
+        self.style.configure('Custom.TFrame') # Ensure style exists
 
-        ttk.Label(self.search_frame, text="Search by Name:").pack(side=tk.LEFT)
-        # use tk.Entry for reliable fg/bg control in dark mode
-        self.search_entry = tk.Entry(self.search_frame, width=42, bg=self.input_bg, fg=self.fg_color, insertbackground=self.fg_color, font=self.big_font)
-        self.search_entry.pack(side=tk.LEFT, padx=12, ipady=6)
+        self._create_search_widgets()
+        self._add_placeholder(self.search_entry)
 
-        ttk.Label(self.search_frame, text="Type:").pack(side=tk.LEFT, padx=(12, 0))
-        self.type_filter = ttk.Combobox(self.search_frame, values=["", "book", "magazine", "film"], width=14, font=self.big_font)
-        self.type_filter.pack(side=tk.LEFT, padx=(8, 12))
-        self.type_filter.set("")
-        # larger buttons
-        self.search_btn = tk.Button(self.search_frame, text="Search", command=self.load_items, bg=self.accent_orange, fg='white', activebackground='#d97706', relief='flat', font=self.btn_font)
-        self.search_btn.pack(side=tk.LEFT, padx=(0,8), ipadx=8, ipady=4)
-        self.reset_search_btn = tk.Button(self.search_frame, text="Reset", command=self.reset_filters, bg='#6b7280', fg='white', activebackground='#4b5563', relief='flat', font=self.btn_font)
-        self.reset_search_btn.pack(side=tk.LEFT, padx=(0,12), ipadx=8, ipady=4)
-        # Theme toggle button (use orange in both modes)
-        self.theme_btn = tk.Button(self.search_frame, text="Light Mode", command=self.toggle_theme, bg=self.accent_orange, fg='white', relief='flat', font=self.btn_font)
-        self.theme_btn.pack(side=tk.RIGHT, ipadx=8, ipady=4)
-
-        # placeholder behavior for search entry
-        self._placeholder_text = 'Enter title or author...'
-        def _add_placeholder():
-            if not self.search_entry.get():
-                self.search_entry.insert(0, self._placeholder_text)
-                self.search_entry.config(fg='#94a3b8')
-
-        def _clear_placeholder(event=None):
-            if self.search_entry.get() == self._placeholder_text:
-                self.search_entry.delete(0, tk.END)
-                self.search_entry.config(fg=self.fg_color)
-
-        self.search_entry.bind('<FocusIn>', _clear_placeholder)
-        self.search_entry.bind('<FocusOut>', lambda e: _add_placeholder())
-        _add_placeholder()
-
-        # TABLE
+        # 2. TABLE (Treeview)
         columns = ("id", "type", "title", "author", "year")
-        self.tree_frame = ttk.Frame(self.root)
-        self.tree_frame.pack(fill=tk.BOTH, expand=True, padx=18, pady=(8, 6))
+        self.tree_frame = ttk.Frame(self.root, padding=15)
+        self.tree_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=(10, 10))
 
         self.tree = ttk.Treeview(self.tree_frame, columns=columns, show="headings")
+        self.vsb = ttk.Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscroll=self.vsb.set)
+        
         for col in columns:
             self.tree.heading(col, text=col.capitalize())
         self.tree.column("id", width=60, anchor='center')
@@ -98,67 +65,254 @@ class InventoryApp:
         self.tree.column("author", width=220)
         self.tree.column("year", width=80, anchor='center')
 
-        self.vsb = ttk.Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscroll=self.vsb.set)
         self.vsb.pack(side=tk.RIGHT, fill=tk.Y)
         self.tree.pack(fill=tk.BOTH, expand=True)
 
-        # FORM FRAME
-        self.tree.tag_configure('odd', background='#0b1220', foreground=self.fg_color)
-        self.tree.tag_configure('even', background='#0f1724', foreground=self.fg_color)
+        # 3. FORM FRAME
+        self.form_frame = ttk.Frame(self.root, padding=(12, 10, 12, 12))
+        self.form_frame.pack(fill=tk.X, padx=20, pady=(0, 20))
+        
+        self._create_form_widgets()
 
-        self.form = ttk.Frame(self.root, padding=(12, 10, 12, 12))
-        self.form.pack(fill=tk.X, padx=18, pady=(4, 12))
+        # Apply default theme (Light Mode) and load data
+        self._apply_light_theme()
+        self.load_items(reapply_theme=False)
+    
+    # --- Theme Logic ---
 
-        ttk.Label(self.form, text="Type:").grid(row=0, column=0, sticky='w', padx=(0,8), pady=4)
-        self.type_box = ttk.Combobox(self.form, values=["book", "magazine", "film"], width=18)
-        self.type_box.grid(row=0, column=1, sticky='w')
+    def _apply_light_theme(self):
+        """Applies light theme styling to all widgets."""
+        self.is_dark = False
+        
+        # Colors
+        bg = '#f3f6fb'
+        secondary_bg = '#ffffff'
+        text_fg = '#0f172a'
+        input_bg = '#ffffff'
+        input_border = '#cbd5e1'
+        accent_reset_gray = '#9ca3af'
+        
+        # Root and Title
+        self.root.configure(bg=bg)
+        self.title.config(bg=bg, fg=text_fg)
+        
+        # Style Configuration
+        self.style.configure('TFrame', background=bg)
+        self.style.configure('TLabel', background=secondary_bg, foreground=text_fg)
+
+        # Update Frame Backgrounds
+        self.style.configure('Form.TFrame', background=secondary_bg)
+        self.style.configure('Search.TFrame', background=secondary_bg)
+        self.style.configure('Custom.TFrame', background=secondary_bg) 
+        
+        self._update_frame_backgrounds(secondary_bg)
+
+        # Entry Widgets (Search and Form)
+        for entry in [self.search_entry, self.title_entry, self.author_entry, self.year_entry]:
+            entry.config(bg=input_bg, fg=text_fg, insertbackground=text_fg, highlightbackground=input_border, highlightcolor=input_border)
+        
+        # Combobox
+        self.style.configure('TCombobox', fieldbackground=input_bg, foreground=text_fg)
+        self.style.map('TCombobox', fieldbackground=[('readonly', input_bg)], background=[('readonly', input_bg)])
+
+        # Treeview (Table)
+        self.style.configure('Treeview', 
+                             background=secondary_bg, 
+                             fieldbackground=secondary_bg, 
+                             foreground=text_fg)
+        self.style.configure('Treeview.Heading', 
+                             background=self.ACCENT_SEARCH, 
+                             foreground=secondary_bg) 
+        
+        self.tree.tag_configure('odd', background='#f8fafc', foreground=text_fg)
+        self.tree.tag_configure('even', background='#ffffff', foreground=text_fg)
+        
+        # Buttons 
+        self.reset_search_btn.config(bg=accent_reset_gray, activebackground='#707886')
+        self.reset_form_btn.config(bg=self.ACCENT_RESET_FORM, activebackground='#c47a30')
+        self.theme_btn.config(text="Dark Mode")
+
+    def _apply_dark_theme(self):
+        """Applies dark theme styling to all widgets."""
+        self.is_dark = True
+        
+        # Colors
+        bg = '#1e1e1e'
+        secondary_bg = '#2c2c2c'
+        text_fg = '#f8fafc'
+        input_bg = '#374151'
+        input_border = '#4b5563'
+        accent_reset_gray = '#4b5563'
+        
+        # Root and Title
+        self.root.configure(bg=bg)
+        self.title.config(bg=bg, fg=text_fg)
+        
+        # Style Configuration
+        self.style.configure('TFrame', background=bg)
+        self.style.configure('TLabel', background=secondary_bg, foreground=text_fg)
+
+        # Update Frame Backgrounds
+        self.style.configure('Form.TFrame', background=secondary_bg)
+        self.style.configure('Search.TFrame', background=secondary_bg)
+        self.style.configure('Custom.TFrame', background=secondary_bg) 
+
+        self._update_frame_backgrounds(secondary_bg)
+
+        # Entry Widgets (Search and Form)
+        for entry in [self.search_entry, self.title_entry, self.author_entry, self.year_entry]:
+            entry.config(bg=input_bg, fg=text_fg, insertbackground=text_fg, highlightbackground=input_border, highlightcolor=input_border)
+        
+        # Combobox
+        self.style.configure('TCombobox', fieldbackground=input_bg, foreground=text_fg)
+        self.style.map('TCombobox', fieldbackground=[('readonly', input_bg)], background=[('readonly', input_bg)])
+
+        # Treeview (Table)
+        self.style.configure('Treeview', 
+                             background=secondary_bg, 
+                             fieldbackground=secondary_bg, 
+                             foreground=text_fg)
+        self.style.configure('Treeview.Heading', 
+                             background=self.ACCENT_SEARCH, 
+                             foreground=secondary_bg)
+        
+        self.tree.tag_configure('odd', background='#1e1e1e', foreground=text_fg)
+        self.tree.tag_configure('even', background='#2c2c2c', foreground=text_fg)
+        
+        # Buttons 
+        self.reset_search_btn.config(bg=accent_reset_gray, activebackground='#374151')
+        self.reset_form_btn.config(bg=self.ACCENT_RESET_FORM, activebackground='#c47a30')
+        self.theme_btn.config(text="Light Mode")
+
+    def _update_frame_backgrounds(self, color):
+        """Manually updates backgrounds of the key frames."""
+        self.style.configure('Custom.TFrame', background=color)
+        self.search_frame.configure(style='Custom.TFrame')
+        self.tree_frame.configure(style='Custom.TFrame')
+        self.form_frame.configure(style='Custom.TFrame')
+
+    # --- Helper Functions for Tkinter Styling and Layout ---
+
+    def _create_search_widgets(self):
+        """Creates and packs all widgets in the search frame."""
+        ttk.Label(self.search_frame, text="Search by Name:").pack(side=tk.LEFT, padx=(5, 5))
+        
+        self.search_entry = tk.Entry(self.search_frame, 
+                                     width=42, 
+                                     font=self.big_font,
+                                     bd=0, relief='flat', highlightthickness=1)
+        self.search_entry.pack(side=tk.LEFT, padx=12, ipady=6)
+
+        ttk.Label(self.search_frame, text="Type:").pack(side=tk.LEFT, padx=(12, 0))
+        self.type_filter = ttk.Combobox(self.search_frame, values=["", "book", "magazine", "film"], width=14, font=self.big_font, state="readonly")
+        self.type_filter.pack(side=tk.LEFT, padx=(8, 12))
+        self.type_filter.set("")
+        
+        self.search_btn = tk.Button(self.search_frame, text="Search", command=self.load_items, bg=self.ACCENT_SEARCH, fg='white', activebackground='#c47a30', relief='flat', font=self.btn_font, bd=0)
+        self.search_btn.pack(side=tk.LEFT, padx=(0,8), ipadx=12, ipady=8)
+        
+        self.reset_search_btn = tk.Button(self.search_frame, text="Reset", command=self.reset_filters, fg='white', relief='flat', font=self.btn_font, bd=0)
+        self.reset_search_btn.pack(side=tk.LEFT, padx=(0,12), ipadx=12, ipady=8)
+        
+        self.theme_btn = tk.Button(self.search_frame, text="Toggle Theme", command=self.toggle_theme, bg=self.ACCENT_TOGGLE, fg='white', activebackground='#9e447b', relief='flat', font=self.btn_font, bd=0)
+        self.theme_btn.pack(side=tk.RIGHT, ipadx=12, ipady=8)
+
+    def _create_form_widgets(self):
+        """Creates and places all widgets in the form frame."""
+        labels = ["Type:", "Title:", "Author/Director:", "Year:"]
+        
+        widgets = [
+            ttk.Combobox(self.form_frame, values=["book", "magazine", "film"], width=18, state="readonly"),
+            tk.Entry(self.form_frame, width=48, font=self.big_font, bd=0, relief='flat', highlightthickness=1),
+            tk.Entry(self.form_frame, width=48, font=self.big_font, bd=0, relief='flat', highlightthickness=1),
+            tk.Entry(self.form_frame, width=20, font=self.big_font, bd=0, relief='flat', highlightthickness=1)
+        ]
+        
+        self.type_box, self.title_entry, self.author_entry, self.year_entry = widgets
         self.type_box.set("book")
 
-        ttk.Label(self.form, text="Title:").grid(row=1, column=0, sticky='w', padx=(0,8), pady=6)
-        self.title_entry = ttk.Entry(self.form, width=48, font=self.big_font)
-        self.title_entry.grid(row=1, column=1, sticky='w', pady=6)
+        for i, label in enumerate(labels):
+            ttk.Label(self.form_frame, text=label).grid(row=i // 2, column=2 * (i % 2), sticky='w', padx=(12, 8), pady=10)
+            # Input fields are correctly configured to take up more space
+            widgets[i].grid(row=i // 2, column=2 * (i % 2) + 1, sticky='ew', pady=10, ipady=4, padx=(0, 12))
+            
+        self.form_frame.columnconfigure(1, weight=1) 
+        self.form_frame.columnconfigure(3, weight=1)
 
-        ttk.Label(self.form, text="Author/Director:").grid(row=2, column=0, sticky='w', padx=(0,8), pady=6)
-        self.author_entry = ttk.Entry(self.form, width=48, font=self.big_font)
-        self.author_entry.grid(row=2, column=1, sticky='w', pady=6)
+        button_row = 2
+        
+        self.add_btn = tk.Button(self.form_frame, text="➕ Add Item", command=self.add_item, bg=self.ACCENT_GREEN, fg='white', activebackground='#059669', relief='flat', font=self.btn_font, bd=0)
+        self.add_btn.grid(row=button_row, column=0, pady=(15, 10), padx=12, ipadx=12, ipady=8, sticky='w')
+        
+        self.delete_btn = tk.Button(self.form_frame, text="🗑️ Delete Selected", command=self.delete_item, bg=self.ACCENT_RED, fg='white', activebackground='#dc2626', relief='flat', font=self.btn_font, bd=0)
+        self.delete_btn.grid(row=button_row, column=1, pady=(15, 10), padx=12, ipadx=12, ipady=8, sticky='w')
+        
+        # Reset Form Button - Color changed to Orange
+        self.reset_form_btn = tk.Button(self.form_frame, text="🔄 Reset Form", command=self.reset_form, bg=self.ACCENT_RESET_FORM, fg='white', activebackground='#c47a30', relief='flat', font=self.btn_font, bd=0)
+        self.reset_form_btn.grid(row=button_row, column=2, pady=(15, 10), padx=12, ipadx=12, ipady=8, sticky='w')
 
-        ttk.Label(self.form, text="Year:").grid(row=3, column=0, sticky='w', padx=(0,8), pady=6)
-        self.year_entry = ttk.Entry(self.form, width=20, font=self.big_font)
-        self.year_entry.grid(row=3, column=1, sticky='w', pady=6)
+    def _add_placeholder(self, entry):
+        # ... (Placeholder logic remains the same for theme compatibility)
+        self._placeholder_text = 'Enter title or author...'
+        def _insert_placeholder():
+            placeholder_fg = '#94a3b8' if self.is_dark else '#9ca3af'
+            text_fg = '#f8fafc' if self.is_dark else '#0f172a'
+            if not entry.get():
+                entry.insert(0, self._placeholder_text)
+                entry.config(fg=placeholder_fg)
 
-        # Buttons using tk for reliable background/foreground colors
-        self.add_btn = tk.Button(self.form, text="Add Item", command=self.add_item, bg='#10b981', fg='white', activebackground='#059669', relief='flat', font=self.btn_font)
-        self.add_btn.grid(row=4, column=0, pady=12, ipadx=8, ipady=4)
-        self.delete_btn = tk.Button(self.form, text="Delete Selected", command=self.delete_item, bg='#ef4444', fg='white', activebackground='#dc2626', relief='flat', font=self.btn_font)
-        self.delete_btn.grid(row=4, column=1, sticky='w', padx=(8,0), ipadx=8, ipady=4)
-        self.reset_form_btn = tk.Button(self.form, text="Reset Form", command=self.reset_form, bg=self.accent_orange, fg='white', activebackground='#d97706', relief='flat', font=self.btn_font)
-        self.reset_form_btn.grid(row=4, column=2, sticky='w', padx=8, ipadx=8, ipady=4)
+        def _clear_placeholder(event=None):
+            text_fg = '#f8fafc' if self.is_dark else '#0f172a'
+            if entry.get() == self._placeholder_text:
+                entry.delete(0, tk.END)
+                entry.config(fg=text_fg)
 
-        self.load_items()
+        entry.bind('<FocusIn>', _clear_placeholder)
+        entry.bind('<FocusOut>', lambda e: _insert_placeholder())
+        _insert_placeholder()
 
-    def load_items(self):
+    def toggle_theme(self):
+        """Switches between light and dark themes."""
+        if self.is_dark:
+            self._apply_light_theme()
+        else:
+            self._apply_dark_theme()
+        
+        # Reload items to update row colors and refresh placeholder
+        self.load_items(reapply_theme=False)
+        self._add_placeholder(self.search_entry)
+
+    # --- API and Data Functions (Remain the same) ---
+
+    def load_items(self, reapply_theme=True):
         params = {}
         q = self.search_entry.get().strip()
-        if q:
-            params["q"] = q
-        # Include type only when user has selected one (optional)
-        if hasattr(self, "type_filter") and self.type_filter.get().strip():
-            params["type"] = self.type_filter.get().strip()
+        if q and q != getattr(self, '_placeholder_text', ''): params["q"] = q
+        if self.type_filter.get().strip(): params["type"] = self.type_filter.get().strip()
 
-        res = requests.get(API, params=params)
-        data = res.json()
+        try:
+            res = requests.get(API, params=params)
+            data = res.json()
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("Connection Error", "Could not connect to the Flask API. Ensure the backend is running.")
+            data = []
+        except Exception as e:
+            messagebox.showerror("Error", f"An unexpected error occurred: {e}")
+            data = []
 
-        for i in self.tree.get_children():
-            self.tree.delete(i)
+        for i in self.tree.get_children(): self.tree.delete(i)
 
-        for item in data:
-            self.tree.insert("", tk.END, values=(item["id"], item["type"], item["title"], item["author"], item["year"]))
+        for idx, item in enumerate(data):
+            tag = 'even' if idx % 2 == 0 else 'odd'
+            self.tree.insert("", tk.END, values=(item["id"], item["type"], item["title"], item["author"], item["year"]), tags=(tag,))
+        
+        if not data:
+             self.tree.insert("", tk.END, values=("", "", "No items found in inventory.", "", ""), tags=('odd',))
 
     def reset_filters(self):
         self.search_entry.delete(0, tk.END)
-        if hasattr(self, "type_filter"):
-            self.type_filter.set("")
+        self.type_filter.set("")
+        self._add_placeholder(self.search_entry)
         self.load_items()
 
     def reset_form(self):
@@ -167,78 +321,6 @@ class InventoryApp:
         self.author_entry.delete(0, tk.END)
         self.year_entry.delete(0, tk.END)
 
-    def toggle_theme(self):
-        """Toggle between dark and light themes and apply."""
-        self.is_dark = not getattr(self, 'is_dark', True)
-        # update theme button text
-        self.theme_btn.config(text="Light Mode" if self.is_dark else "Dark Mode")
-        self.apply_theme()
-
-    def apply_theme(self):
-        """Apply current theme colors to widgets."""
-        if self.is_dark:
-            self.bg_color = '#222222'
-            self.fg_color = '#f8fafc'
-            self.input_bg = '#374151'
-            search_bg = '#f59e0b'
-            reset_search_bg = '#6b7280'
-            add_bg = '#10b981'
-            del_bg = '#ef4444'
-            reset_bg = '#f59e0b'
-            tree_bg = '#222222'
-            tree_head = '#111827'
-        else:
-            self.bg_color = '#f3f6fb'
-            self.fg_color = '#0f172a'
-            self.input_bg = '#ffffff'
-            search_bg = '#2563eb'
-            reset_search_bg = '#6b7280'
-            add_bg = '#16a34a'
-            del_bg = '#dc2626'
-            reset_bg = '#f59e0b'
-            tree_bg = '#ffffff'
-            tree_head = '#f3f4f6'
-
-        # root and title
-        self.root.configure(bg=self.bg_color)
-        self.title.config(bg=self.bg_color, fg=self.fg_color)
-
-        # ttk styles
-        self.style.configure('TFrame', background=self.bg_color)
-        self.style.configure('TLabel', background=self.bg_color, foreground=self.fg_color)
-        self.style.configure('TEntry', fieldbackground=self.input_bg, foreground=self.fg_color)
-        self.style.configure('Treeview', background=tree_bg, fieldbackground=tree_bg, foreground=self.fg_color)
-        self.style.configure('Treeview.Heading', background=tree_head, foreground=self.fg_color)
-
-        # entries and combobox
-        self.search_entry.config(bg=self.input_bg, fg=self.fg_color, insertbackground=self.fg_color)
-        try:
-            self.style.configure('TCombobox', fieldbackground=self.input_bg, foreground=self.fg_color)
-        except Exception:
-            pass
-
-        # buttons
-        self.search_btn.config(bg=search_bg, fg='white')
-        self.reset_search_btn.config(bg=reset_search_bg, fg='white')
-        # keep theme toggle button orange so it remains visible in both modes
-        try:
-            self.theme_btn.config(bg=self.accent_orange, fg='white', activebackground='#d97706')
-        except Exception:
-            # fallback if widget not yet available
-            pass
-
-        self.add_btn.config(bg=add_bg, fg='white')
-        self.delete_btn.config(bg=del_bg, fg='white')
-        self.reset_form_btn.config(bg=reset_bg, fg='white')
-
-        # tree rows
-        if self.is_dark:
-            self.tree.tag_configure('odd', background='#222222', foreground=self.fg_color)
-            self.tree.tag_configure('even', background='#1a1a1a', foreground=self.fg_color)
-        else:
-            self.tree.tag_configure('odd', background='#ffffff', foreground=self.fg_color)
-            self.tree.tag_configure('even', background='#f8fafc', foreground=self.fg_color)
-
     def add_item(self):
         payload = {
             "type": self.type_box.get(),
@@ -246,9 +328,15 @@ class InventoryApp:
             "author": self.author_entry.get(),
             "year": int(self.year_entry.get() or 0)
         }
-        requests.post(API, json=payload)
-        self.load_items()
-        messagebox.showinfo("Success", "Item Added")
+        try:
+            res = requests.post(API, json=payload)
+            if res.status_code == 201:
+                self.load_items(); self.reset_form()
+                messagebox.showinfo("Success", "Item Added")
+            else:
+                messagebox.showerror("Error", res.json().get('error', 'Failed to add item'))
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("Connection Error", "Could not connect to API.")
 
     def delete_item(self):
         selected = self.tree.selection()
@@ -256,12 +344,25 @@ class InventoryApp:
             messagebox.showwarning("Warning", "Select an item to delete")
             return
         
-        item_id = self.tree.item(selected[0])["values"][0]
-        requests.delete(f"{API}/{item_id}")
-        self.load_items()
-        messagebox.showinfo("Deleted", "Item removed")
+        item_data = self.tree.item(selected[0])["values"]
+        if not item_data or not item_data[0] or item_data[2] == "No items found in inventory.":
+             messagebox.showwarning("Warning", "Please select a valid item row to delete.")
+             return
+             
+        item_id = item_data[0]
+        
+        try:
+            res = requests.delete(f"{API}/{item_id}")
+            if res.status_code == 200:
+                self.load_items(); messagebox.showinfo("Deleted", "Item removed")
+            elif res.status_code == 404:
+                messagebox.showwarning("Not Found", "Item already deleted or not found."); self.load_items()
+            else:
+                messagebox.showerror("Error", "Failed to delete item.")
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror("Connection Error", "Could not connect to API.")
 
-
-root = tk.Tk()
-app = InventoryApp(root)
-root.mainloop()
+if __name__ == '__main__':
+    root = tk.Tk()
+    app = InventoryApp(root)
+    root.mainloop()
